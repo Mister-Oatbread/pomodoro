@@ -7,90 +7,123 @@
 
 // includes
 #include <stdio.h>
-#include <time.h>
+#include <string.h>
 #include <stdbool.h>
+#include <time.h>
+#include <unistd.h>
 
 typedef struct pomodoro_parameters {
     int learning_duration;
     int break_duration;
 } pomodoro_parameters;
 
+typedef struct time_container {
+    short sec;
+    short min;
+    short hour;
+    long time;
+} time_container;
+
 // function prototypes
-bool investigate_switch(long current_time, pomodoro_parameters *params, bool learning_interval_active);
-long get_time_in_phase(long start_of_last_phase);
-long get_time();
-long construct_current_time();
+void print_remaining_time(const int remaining_time, const pomodoro_parameters *const p_params, const bool learning_interval_active);
+bool investigate_switch(const time_container *p_current_time, const pomodoro_parameters *const params, const bool learning_interval_active);
+void update_time(time_container *p_current_time);
 
 // main
 int main() {
-    printf("Welcome to the pomodoro program by Mister Oatbread\n");
+    printf("Welcome to the Pomodoro Program by Mister Oatbread\n");
 
-    long current_time;
-    long start_of_last_phase;
+    // initialize time containers
+    time_container current_time;
+    time_container start_of_last_phase;
+    time_container *p_current_time = &current_time;
+    time_container *p_start_of_last_phase = &start_of_last_phase;
+    update_time(p_start_of_last_phase);
 
-
-    pomodoro_parameters params = {.learning_duration = 2500,
-                                    .break_duration = 500};
+    // initialize other important stuff
+    pomodoro_parameters params = {.learning_duration = 3,
+                                    .break_duration = 3};
 
     bool learning_interval_active = true;
     bool switch_is_needed;
+    int remaining_time;
 
-    for(int i=0; i<10; i++) {
-        start_of_last_phase = 0;
-        current_time = get_time_in_phase(start_of_last_phase);
-        switch_is_needed = investigate_switch(current_time, &params, learning_interval_active);
+    // main loop
+    while (true) {
+        update_time(p_current_time);
 
-        printf("%ld\n", current_time);
+        // check if a toggle between the two phases is necessary
+        switch_is_needed = investigate_switch(p_current_time, &params, learning_interval_active);
+        if (switch_is_needed) {
+            learning_interval_active = !(learning_interval_active);
+            update_time(p_start_of_last_phase);
+        }
+
+        // update the display if necessary
+        remaining_time = p_current_time->min - p_start_of_last_phase->min;
+        if (p_current_time->sec != p_start_of_last_phase->sec) {
+            print_remaining_time(remaining_time, &params, learning_interval_active);
+        }
     }
     return 0;
 }
 
-bool investigate_switch(long current_time, pomodoro_parameters *params, bool learning_interval_active) {
+/**
+ * prints some information on the state and how much time is left
+ */
+void print_remaining_time(const int remaining_time, const pomodoro_parameters *const p_params, const bool learning_interval_active) {
+    // remove last line
+    printf("\033[A\033[2K");
+
+    int threshold;
+    int time_remaining;
+    char current_phase[12];
+    if (learning_interval_active) {
+        threshold = p_params->learning_duration;
+        strncpy(current_phase,"learning",12);
+    } else {
+        threshold = p_params->break_duration;
+        strncpy(current_phase,"resting",12);
+    }
+
+    time_remaining = threshold - remaining_time;
+
+    printf("currently at: %s | time until next phase: %d", current_phase, threshold);
+}
+
+/**
+ * handles the logic if a switch should happen
+ */
+bool investigate_switch(const time_container *p_current_time, const pomodoro_parameters *const p_params, const bool learning_interval_active) {
     int threshold;
 
     if (learning_interval_active) {
-        threshold = params->learning_duration;
+        threshold = p_params->learning_duration;
     } else {
-        threshold = params->break_duration;
+        threshold = p_params->break_duration;
     }
+    // gday mate :D !!!
 
-    if (current_time  > threshold) {
+    if (p_current_time->time > threshold) {
         return true;
     } else {
         return false;
     }
 }
 
-void print_time() {
-}
-
 /**
  * returns the time in minutes and seconds relative to the last time a phase shift occurred
  */
-long get_time_in_phase(time_t start_of_last_phase) {
-    long current_time = construct_current_time();
-    return current_time - start_of_last_phase;
-}
-
-/**
- * returns the time in minutes and seconds
- */
-long get_time() {
-    long current_time = construct_current_time();
-    return current_time;
-}
-
-/**
- * This function takes a time and slaps it into the required format for this program
- */
-long construct_current_time() {
+void update_time(time_container *p_current_time) {
     time_t now_raw;
     time(&now_raw);
     struct tm now;
     now = *(localtime(&now_raw));
 
-    long current_time = now.tm_hour*10000 + now.tm_min*100 + now.tm_sec;
-    return current_time;
+    p_current_time->sec = now.tm_sec;
+    p_current_time->min = now.tm_min;
+    p_current_time->hour = now.tm_hour;
+    p_current_time->time = now.tm_hour*10000 + now.tm_min*100 + now.tm_sec;
 }
 
 
