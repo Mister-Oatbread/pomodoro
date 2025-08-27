@@ -1,3 +1,11 @@
+
+
+# ignore everything
 *
+
+# except ...
 !main.c
 !.gitignore
+!install.sh
+
+
