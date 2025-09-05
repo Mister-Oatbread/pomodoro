@@ -7,6 +7,7 @@
 
 // includes
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <math.h>
@@ -35,14 +36,13 @@ typedef struct time_container {
 } time_container;
 
 // function prototypes
-void print_time_container(const time_container *const p_time_container);
 void print_status(const int time_difference, const pomodoro_parameters *const p_params, const bool learning_interval_active);
 bool investigate_switch(const long time_difference, const pomodoro_parameters *const params, const bool learning_interval_active);
 void update_time(time_container *p_current_time);
 
 // main
 int main() {
-    printf("Welcome to the Pomodoro Program by Mister Oatbread\n\n");
+    printf("Welcome to the Pomodoro Program by Mister Oatbread\n\n\n");
 
     // initialize time containers
     time_container current_time;
@@ -56,7 +56,7 @@ int main() {
     update_time(p_last_print);
 
     // initialize other important stuff
-    pomodoro_parameters params = {.learning_duration = 103,
+    pomodoro_parameters params = {.learning_duration = 10,
                                     .break_duration = 5};
 
     bool learning_interval_active = true;
@@ -75,6 +75,7 @@ int main() {
         if (switch_is_needed) {
             learning_interval_active = !(learning_interval_active);
             update_time(p_start_of_last_phase);
+            system("aplay -q ./sounds/ping.wav");
         }
 
         // update the display if necessary
@@ -82,22 +83,9 @@ int main() {
         if (p_current_time->time != p_last_print->time) {
             update_time(p_last_print);
             print_status(remaining_time, &params, learning_interval_active);
-            // printf("current time: %ld\n", p_current_time->time);
-            // printf("last switch: %ld\n", p_start_of_last_phase->time);
         }
     }
     return 0;
-}
-
-/**
- * prints out the complete status of a time container
- * this is mainly intended for debugging purposes.
- */
-void print_time_container(const time_container *const p_time_container) {
-    printf("time: %ld\n", p_time_container->time);
-    // printf("sec: %d\n", p_time_container->sec);
-    // printf("min: %d\n", p_time_container->min);
-    // printf("hour: %d\n", p_time_container->hour);
 }
 
 /**
@@ -105,7 +93,7 @@ void print_time_container(const time_container *const p_time_container) {
  */
 void print_status(const int time_difference, const pomodoro_parameters *const p_params, const bool learning_interval_active) {
     // remove last line
-    // printf("\033[A\033[2K");
+    printf("\033[A\033[2K");
 
     int threshold;
     float time_remaining;
@@ -122,7 +110,7 @@ void print_status(const int time_difference, const pomodoro_parameters *const p_
     time_remaining = ceil(time_remaining/100);
 
     // final message
-    printf("currently at: %s | minutes until next phase: %2.0f\n", current_phase, time_remaining);
+    printf("currently %s | less than%2.0f minutes until next phase\n", current_phase, time_remaining);
 }
 
 /**
